@@ -1,2 +1,2 @@
 # my_word2vec
-Implementation of Word2Vec Skipgram with Negative Sampling
+Implementation of word2vec Skip-gram with Negative Sampling
