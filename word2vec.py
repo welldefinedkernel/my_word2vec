@@ -32,7 +32,7 @@ class Word2Vec:
         v_cjs = cache["neg"]
 
         pos_loss = -np.log(self._sigmoid(np.dot(e_w, v_ci)))
-        neg_loss = -np.sum([np.log(1 - self._sigmoid(np.dot(e_w, v_cj))) for v_cj in v_cjs])
+        neg_loss = -np.sum([np.log(1 - self._sigmoid(np.dot(e_w, v_cjs))) for v_cj in v_cjs])
 
         L = pos_loss + neg_loss
 
