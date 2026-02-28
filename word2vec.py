@@ -48,19 +48,19 @@ class Word2Vec:
 
         eps = 1e-10
         pos_loss = -np.log(pos_pred + eps)
-        neg_loss = -np.sum(np.log(1 - neg_preds + eps), axis=1)
+        neg_loss = -np.sum(np.log(1 - neg_preds + eps))
 
         L = np.sum(pos_loss + neg_loss)
 
         return L
 
     def forward(self, center_idx, context_idx, negative_indices):
-        e_w = self.E[center_idx, :]                      # Embedding vector
-        v_ci = self.W[context_idx, :]                    # Positive sample 
-        v_cjs = [self.W[i, :] for i in negative_indices] # Negative samples
+        e_w = self.E[center_idx, :]         # Embedding vector
+        v_ci = self.W[context_idx, :]       # Positive sample 
+        v_cjs = self.W[negative_indices, :] # Negative samples
 
-        pos_pred = self._sigmoid(np.dot(e_w, v_ci))                         # Prediction for positive sample
-        neg_preds = [(self._sigmoid(np.dot(e_w, v_cj))) for v_cj in v_cjs]  # Predictions for negative samples
+        pos_pred = self._sigmoid(np.dot(e_w, v_ci)) # Prediction for positive sample
+        neg_preds = self._sigmoid(v_cjs @ e_w.T)    # Predictions for negative samples
 
         return {"emb" : e_w, 
                 "pos" : v_ci, 
@@ -76,10 +76,10 @@ class Word2Vec:
         pos_pred = cache["pos_pred"]
         neg_preds = cache["neg_preds"]
 
-        e_w_grad = (pos_pred - 1) * v_ci
-        e_w_grad += np.sum([neg_pred * v_cj for neg_pred, v_cj in zip(neg_preds, v_cjs)], axis=0)
+
+        e_w_grad = (pos_pred - 1) * v_ci + np.sum(neg_preds.reshape(-1, 1) * v_cjs)
         v_ci_grad = (pos_pred - 1) * e_w 
-        v_cj_grads = [neg_pred * e_w for neg_pred in neg_preds]
+        v_cj_grads = np.outer(neg_preds, e_w)
 
         return {"emb_gr" : e_w_grad, 
                 "pos_gr" : v_ci_grad, 
@@ -121,8 +121,7 @@ class Word2Vec:
                     
                     self.E[center_word_idx, :] -= self.alpha * grads["emb_gr"]
                     self.W[context_word_idx, :] -= self.alpha * grads["pos_gr"]
-                    for idx, neg_idx in enumerate(negative_samples):
-                        self.W[neg_idx, :] -= self.alpha * grads["neg_gr"][idx]
+                    self.W[negative_samples, :] -= self.alpha * grads["neg_gr"]
             
             print(f"Epoch: {epoch+1}/{epochs} - Loss: {total_loss:.4f}")
 
