@@ -12,9 +12,13 @@ class Word2Vec:
                  embedding_dim : int, 
                  learning_rate=1e-3, 
                  window_size=5,
-                 negative_samples=5):
+                 negative_samples=5,
+                 seed=None):
 
         self.preprocessor = preprocessor
+        self.seed = seed
+        if self.seed is not None:
+            np.random.seed(self.seed)
         
         self.v = preprocessor.vocab_size 
         self.d = embedding_dim
@@ -126,13 +130,3 @@ class Word2Vec:
 
     def get_embedding_matrix(self):
         return self.E
-
-def main():
-    raw_text = "Hello, my name is Roman! This is a simple test corpus for Word2Vec training!"
-    txt_preprocessor = TextPreprocessor()
-
-    word2vec = Word2Vec(txt_preprocessor, embedding_dim=10, negative_samples=1)
-    word2vec.train(raw_text)
-
-if __name__ == "__main__":
-    main()
