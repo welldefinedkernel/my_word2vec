@@ -34,12 +34,11 @@ class Word2Vec:
         pass
 
     def loss(self, cache):
-        e_w = cache["emb"]
-        v_ci = cache["pos"]
-        v_cjs = cache["neg"]
+        pos_pred = cache["pos_pred"]
+        neg_preds = cache["neg_preds"]
 
-        pos_loss = -np.log(self._sigmoid(np.dot(e_w, v_ci)))
-        neg_loss = -np.sum([np.log(1 - self._sigmoid(np.dot(e_w, v_cj))) for v_cj in v_cjs])
+        pos_loss = -np.log(pos_pred)
+        neg_loss = -np.sum([np.log(1 - neg_pred) for neg_pred in neg_preds])
 
         L = pos_loss + neg_loss
 
@@ -51,12 +50,12 @@ class Word2Vec:
         v_cjs = [self.W[i, :] for i in negative_indices] # Negative samples
 
         pos_pred = self._sigmoid(np.dot(e_w, v_ci))                         # Prediction for positive sample
-        neg_preds = [(self._sigmoid(np.dot(e_w, v_cj))) for  v_cj in v_cjs] # Predictions for negative samples
+        neg_preds = [(self._sigmoid(np.dot(e_w, v_cj))) for v_cj in v_cjs]  # Predictions for negative samples
 
         return {"emb" : e_w, 
                 "pos" : v_ci, 
                 "neg" : v_cjs,
-                "pos_red" : pos_pred,
+                "pos_pred" : pos_pred,
                 "neg_preds" : neg_preds}
 
     def backward(self, cache):
@@ -67,14 +66,18 @@ class Word2Vec:
         pos_pred = cache["pos_pred"]
         neg_preds = cache["neg_preds"]
 
-        e_w_grad = (pos_pred - 1) * v_ci + np.sum([neg_pred * v_cj for neg_pred, v_cj in zip(neg_preds, v_cjs)])
+        e_w_grad = (pos_pred - 1) * v_ci
+        e_w_grad += np.sum([neg_pred * v_cj for neg_pred, v_cj in zip(neg_preds, v_cjs)], axis=0)
         v_ci_grad = (pos_pred - 1) * e_w 
         v_cj_grads = [neg_pred * e_w for neg_pred in neg_preds]
 
-        return {"emb_gr" : e_w_grad, "pos_gr" : v_ci_grad, "neg_gr" : v_cj_grads}
+        return {"emb_gr" : e_w_grad, 
+                "pos_gr" : v_ci_grad, 
+                "neg_gr" : v_cj_grads}
 
     def train(self, epochs=3):
-        ...
+        for _ in epochs:
+            ...
 
     def get_embedding(self, word_idx):
         return self.E[word_idx, :] 
@@ -88,6 +91,7 @@ def main():
     txt_preprocessor.process(raw_text)
 
     word2vec = Word2Vec(txt_preprocessor, embedding_dim=10)
+    word2vec.train()
 
 if __name__ == "__main__":
     main()
