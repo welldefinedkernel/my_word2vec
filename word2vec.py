@@ -1,19 +1,26 @@
 import numpy as np
-import re
+from text_preprocessor import TextPreprocessor
 
 class Word2Vec:
+    """
+    Word2Vec model. 
+    Trained using Skip-gram with Negative Sampling.
+    """
+
     def __init__(self, 
-                 vocab_size, 
-                 embedding_dim, 
+                 preprocessed_text : TextPreprocessor,
+                 embedding_dim : int, 
                  learning_rate=1e-3, 
                  window_size = 5,
                  negative_samples=5):
 
-        self.E = np.ones((vocab_size, embedding_dim)) # Input embeddings
-        self.W = np.ones((vocab_size, embedding_dim)) # Output embeddings
-        
-        self.v = vocab_size
+        self.corpus = preprocessed_text
+
+        self.v = preprocessed_text.vocab_size
         self.d = embedding_dim
+
+        self.E = np.ones((self.v, self.d)) # Input embeddings
+        self.W = np.ones((self.v, self.d)) # Output embeddings
 
         self.alpha = learning_rate
         self.k = negative_samples
@@ -66,18 +73,8 @@ class Word2Vec:
 
         return {"emb_gr" : e_w_grad, "pos_gr" : v_ci_grad, "neg_gr" : v_cj_grads}
 
-    def train(self, corpus: str, epochs=3):
-        corpus = corpus.lower()
-        corpus = re.sub(r'[^a-z\s]', '', corpus)
-
-        tokens = ["_"] * self.C + corpus.split() + ["_"] * self.C
-        print(tokens)
-
-        for _ in range(epochs):
-            for i, center in enumerate(tokens[self.C : -self.C]):
-                R = np.random.randint(1, self.C)
-                for j, context in enumerate(tokens[i - self.R : i + self.R]):
-                    ...
+    def train(self, epochs=3):
+        ...
 
     def get_embedding(self, word_idx):
         return self.E[word_idx, :] 
@@ -86,10 +83,11 @@ class Word2Vec:
         return self.E
 
 def main():
-    word2vec = Word2Vec(10, 10)
-    cache = word2vec.forward(5, 5, [0, 1, 2, 3, 4])
-    print(word2vec.loss(cache))
-    word2vec.train("Hello, my name is Roman!")
+    raw_text = "Hello, my name is Roman!"
+    txt_preprocessor = TextPreprocessor()
+    txt_preprocessor.process(raw_text)
+
+    word2vec = Word2Vec(txt_preprocessor, embedding_dim=10)
 
 if __name__ == "__main__":
     main()
