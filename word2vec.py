@@ -3,8 +3,15 @@ from text_preprocessor import TextPreprocessor
 
 class Word2Vec:
     """
-    Word2Vec model. 
-    Trained using Skip-gram with Negative Sampling.
+    Word2Vec model trained using Skip-gram with Negative Sampling (SGNS).
+    
+    Args:
+        preprocessor (TextPreprocessor): Handles vocab and tokens.
+        embedding_dim (int): Dimensionality of the word vectors.
+        learning_rate (float): SGD learning rate.
+        window_size (int): Max context window distance.
+        negative_samples (int): Number of negative samples per context word.
+        seed (int): Optional random seed for reproducible initialization.
     """
 
     def __init__(self, 
@@ -35,6 +42,7 @@ class Word2Vec:
         return np.reciprocal(1 + np.exp(-x))
 
     def _get_negative_samples(self, center_idx, context_idx, n_samples):
+        """Samples uniformly from the vocabulary, excluding the current center and context words."""
         exclude = [center_idx, context_idx]
         all_indices = np.arange(self.v)
         possible_indices = np.setdiff1d(all_indices, exclude)
@@ -43,6 +51,7 @@ class Word2Vec:
 
 
     def loss(self, cache):
+        """Calculates SGNS log loss for a batch of predictions."""
         pos_pred = cache["pos_pred"]
         neg_preds = cache["neg_preds"]
 
@@ -55,6 +64,7 @@ class Word2Vec:
         return L
 
     def forward(self, center_idx, context_idx, negative_indices):
+        """Forward pass to compute predictions for positive/negative samples."""
         e_w = self.E[center_idx, :]         # Embedding vector
         v_ci = self.W[context_idx, :]       # Positive sample 
         v_cjs = self.W[negative_indices, :] # Negative samples
@@ -69,6 +79,7 @@ class Word2Vec:
                 "neg_preds" : neg_preds}
 
     def backward(self, cache):
+        """Computes gradients for input and output embeddings."""
         e_w = cache["emb"]
         v_ci = cache["pos"]
         v_cjs = cache["neg"]
@@ -85,11 +96,13 @@ class Word2Vec:
                 "neg_gr" : v_cj_grads}
 
     def train(self, corpus: str, epochs=3):
+        """Trains the Word2Vec model over the corpus using SGD."""
         tokens = self.preprocessor.process(corpus)
         
         # Retrieve vocab size and initialize embedding weights
         self.v = self.preprocessor.vocab_size
         
+        # Xavier initialization
         limit = np.sqrt(6 / (self.v + self.d))
         self.E = np.random.uniform(-limit, limit, (self.v, self.d)) 
         self.W = np.random.uniform(-limit, limit, (self.v, self.d))
@@ -125,7 +138,5 @@ class Word2Vec:
             print(f"Epoch: {epoch+1}/{epochs} - Loss: {total_loss:.4f}")
 
     def get_embedding(self, word_idx):
+        """Returns the learned embedding vector for a given word index."""
         return self.E[word_idx, :] 
-
-    def get_embedding_matrix(self):
-        return self.E
