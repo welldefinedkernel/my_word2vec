@@ -85,8 +85,10 @@ class Word2Vec:
         
         # Retrieve vocab size and initialize embedding weights
         self.v = self.preprocessor.vocab_size
-        self.E = np.random.uniform(-1, 1, (self.v, self.d)) 
-        self.W = np.random.uniform(-1, 1, (self.v, self.d)) 
+        
+        limit = np.sqrt(6 / (self.v + self.d))
+        self.E = np.random.uniform(-limit, limit, (self.v, self.d)) 
+        self.W = np.random.uniform(-limit, limit, (self.v, self.d))
 
         for epoch in range(epochs):
             total_loss = 0
