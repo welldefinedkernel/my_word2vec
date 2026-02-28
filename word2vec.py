@@ -32,7 +32,7 @@ class Word2Vec:
         v_cjs = cache["neg"]
 
         pos_loss = -np.log(self._sigmoid(np.dot(e_w, v_ci)))
-        neg_loss = -np.sum([np.log(1 - self._sigmoid(np.dot(e_w, v_cjs))) for v_cj in v_cjs])
+        neg_loss = -np.sum([np.log(1 - self._sigmoid(np.dot(e_w, v_cj))) for v_cj in v_cjs])
 
         L = pos_loss + neg_loss
 
@@ -46,19 +46,30 @@ class Word2Vec:
         return {"emb" : e_w, "pos" : v_ci, "neg" : v_cjs}
 
     def backward(self, cache):
-        pass
+        e_w = cache["emb"]
+        v_ci = cache["pos"]
+        v_cjs = cache["neg"]
+
+        e_w_grad = (self._sigmoid(np.dot(e_w, v_ci)) - 1) * v_ci + np.sum([(self._sigmoid(np.dot(e_w, v_cj))) * v_cj for v_cj in v_cjs])
+        v_ci_grad = (self._sigmoid(np.dot(e_w, v_ci)) - 1) * e_w 
+        v_cj_grads = [(self._sigmoid(np.dot(e_w, v_cj))) * e_w for v_cj in v_cjs]
+
+        return {"emb_gr" : e_w_grad, "pos_gr" : v_ci_grad, "neg_gr" : v_cj_grads}
 
     def train(self, corpus: str, epochs=3):
-        for e in range(epochs):
-            ...
+        ...
 
     def get_embedding(self, word_idx):
         return self.E[word_idx, :] 
+
+    def get_embedding_matrix(self):
+        return self.E
 
 def main():
     word2vec = Word2Vec(10, 10)
     cache = word2vec.forward(5, 5, [0, 1, 2, 3, 4])
     print(word2vec.loss(cache))
+    word2vec.train("Hello, my name is Roman!")
 
 if __name__ == "__main__":
     main()
