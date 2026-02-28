@@ -43,21 +43,41 @@ class Word2Vec:
         v_ci = self.W[context_idx, :]                    # Positive sample 
         v_cjs = [self.W[i, :] for i in negative_indices] # Negative samples
 
-        return {"emb" : e_w, "pos" : v_ci, "neg" : v_cjs}
+        pos_pred = self._sigmoid(np.dot(e_w, v_ci))                         # Prediction for positive sample
+        neg_preds = [(self._sigmoid(np.dot(e_w, v_cj))) for  v_cj in v_cjs] # Predictions for negative samples
+
+        return {"emb" : e_w, 
+                "pos" : v_ci, 
+                "neg" : v_cjs,
+                "pos_red" : pos_pred,
+                "neg_preds" : neg_preds}
 
     def backward(self, cache):
         e_w = cache["emb"]
         v_ci = cache["pos"]
         v_cjs = cache["neg"]
 
-        e_w_grad = (self._sigmoid(np.dot(e_w, v_ci)) - 1) * v_ci + np.sum([(self._sigmoid(np.dot(e_w, v_cj))) * v_cj for v_cj in v_cjs])
-        v_ci_grad = (self._sigmoid(np.dot(e_w, v_ci)) - 1) * e_w 
-        v_cj_grads = [(self._sigmoid(np.dot(e_w, v_cj))) * e_w for v_cj in v_cjs]
+        pos_pred = cache["pos_pred"]
+        neg_preds = cache["neg_preds"]
+
+        e_w_grad = (pos_pred - 1) * v_ci + np.sum([neg_pred * v_cj for neg_pred, v_cj in zip(neg_preds, v_cjs)])
+        v_ci_grad = (pos_pred - 1) * e_w 
+        v_cj_grads = [neg_pred * e_w for neg_pred in neg_preds]
 
         return {"emb_gr" : e_w_grad, "pos_gr" : v_ci_grad, "neg_gr" : v_cj_grads}
 
     def train(self, corpus: str, epochs=3):
-        ...
+        corpus = corpus.lower()
+        corpus = re.sub(r'[^a-z\s]', '', corpus)
+
+        tokens = ["_"] * self.C + corpus.split() + ["_"] * self.C
+        print(tokens)
+
+        for _ in range(epochs):
+            for i, center in enumerate(tokens[self.C : -self.C]):
+                R = np.random.randint(1, self.C)
+                for j, context in enumerate(tokens[i - self.R : i + self.R]):
+                    ...
 
     def get_embedding(self, word_idx):
         return self.E[word_idx, :] 
