@@ -46,10 +46,11 @@ class Word2Vec:
         pos_pred = cache["pos_pred"]
         neg_preds = cache["neg_preds"]
 
-        pos_loss = -np.log(pos_pred)
-        neg_loss = -np.sum([np.log(1 - neg_pred) for neg_pred in neg_preds])
+        eps = 1e-10
+        pos_loss = -np.log(pos_pred + eps)
+        neg_loss = -np.sum(np.log(1 - neg_preds + eps), axis=1)
 
-        L = pos_loss + neg_loss
+        L = np.sum(pos_loss + neg_loss)
 
         return L
 

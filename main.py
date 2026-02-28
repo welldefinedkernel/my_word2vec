@@ -18,7 +18,11 @@ def main():
     print("Preprocessing text...")
     txt_preprocessor = TextPreprocessor()
 
-    word2vec = Word2Vec(txt_preprocessor, embedding_dim=100, negative_samples=10, seed=42)
+    word2vec = Word2Vec(txt_preprocessor, 
+                        embedding_dim=100, 
+                        learning_rate=1e-2,
+                        negative_samples=10, 
+                        seed=42)
     
     print("Starting training...")
     word2vec.train(raw_text, epochs=20)
