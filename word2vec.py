@@ -8,19 +8,19 @@ class Word2Vec:
     """
 
     def __init__(self, 
-                 preprocessed_text : TextPreprocessor,
+                 preprocessor : TextPreprocessor,
                  embedding_dim : int, 
                  learning_rate=1e-3, 
-                 window_size = 5,
+                 window_size=5,
                  negative_samples=5):
 
-        self.corpus = preprocessed_text
-
-        self.v = preprocessed_text.vocab_size
+        self.preprocessor = preprocessor
+        
+        self.v = preprocessor.vocab_size 
         self.d = embedding_dim
 
-        self.E = np.ones((self.v, self.d)) # Input embeddings
-        self.W = np.ones((self.v, self.d)) # Output embeddings
+        self.E = None # Input embeddings
+        self.W = None # Output embeddings
 
         self.alpha = learning_rate
         self.k = negative_samples
@@ -31,7 +31,12 @@ class Word2Vec:
         return np.reciprocal(1 + np.exp(-x))
 
     def _get_negative_samples(self, center_idx, context_idx, n_samples):
-        pass
+        exclude = [center_idx, context_idx]
+        all_indices = np.arange(self.v)
+        possible_indices = np.setdiff1d(all_indices, exclude)
+
+        return np.random.choice(possible_indices, size=n_samples, replace=False)
+
 
     def loss(self, cache):
         pos_pred = cache["pos_pred"]
@@ -75,9 +80,44 @@ class Word2Vec:
                 "pos_gr" : v_ci_grad, 
                 "neg_gr" : v_cj_grads}
 
-    def train(self, epochs=3):
-        for _ in epochs:
-            ...
+    def train(self, corpus: str, epochs=3):
+        tokens = self.preprocessor.process(corpus)
+        
+        # Retrieve vocab size and initialize embedding weights
+        self.v = self.preprocessor.vocab_size
+        self.E = np.random.uniform(-1, 1, (self.v, self.d)) 
+        self.W = np.random.uniform(-1, 1, (self.v, self.d)) 
+
+        for epoch in range(epochs):
+            total_loss = 0
+            for i, center_word_idx in enumerate(tokens):
+        
+                # Dynamic window size for center word
+                current_window_size = np.random.randint(1, self.C + 1)
+                start = max(0, i - current_window_size)
+                end = min(len(tokens), i + current_window_size + 1)
+                
+                for j in range(start, end):
+                    if i == j: 
+                        continue # Skip center word
+                    
+                    context_word_idx = tokens[j]
+                    
+                    negative_samples = self._get_negative_samples(center_word_idx, context_word_idx, self.k)
+                    
+                    cache = self.forward(center_word_idx, context_word_idx, negative_samples)
+                    
+                    loss = self.loss(cache)
+                    total_loss += loss
+                    
+                    grads = self.backward(cache)
+                    
+                    self.E[center_word_idx, :] -= self.alpha * grads["emb_gr"]
+                    self.W[context_word_idx, :] -= self.alpha * grads["pos_gr"]
+                    for idx, neg_idx in enumerate(negative_samples):
+                        self.W[neg_idx, :] -= self.alpha * grads["neg_gr"][idx]
+            
+            print(f"Epoch: {epoch+1}/{epochs} - Loss: {total_loss:.4f}")
 
     def get_embedding(self, word_idx):
         return self.E[word_idx, :] 
@@ -86,12 +126,11 @@ class Word2Vec:
         return self.E
 
 def main():
-    raw_text = "Hello, my name is Roman!"
+    raw_text = "Hello, my name is Roman! This is a simple test corpus for Word2Vec training!"
     txt_preprocessor = TextPreprocessor()
-    txt_preprocessor.process(raw_text)
 
-    word2vec = Word2Vec(txt_preprocessor, embedding_dim=10)
-    word2vec.train()
+    word2vec = Word2Vec(txt_preprocessor, embedding_dim=10, negative_samples=1)
+    word2vec.train(raw_text)
 
 if __name__ == "__main__":
     main()

@@ -1,5 +1,3 @@
-from typing import Text
-import numpy as np
 import re
 from collections import Counter
 
@@ -16,14 +14,13 @@ class TextPreprocessor:
         self.word_counts = Counter()
         self.vocab_size = 0
         
-        self.tokens = []
+        self.vocab_size = 0
         self.word_freqs = {}
         
     def preprocess_text(self, text):
         text = text.lower()
         text = re.sub(r'[^a-z\s]', '', text)
-        self.tokens = text.split()
-        return self.tokens
+        return text.split()
 
     def build_vocab(self, tokens):
         counts = Counter(tokens)
