@@ -76,8 +76,7 @@ class Word2Vec:
         pos_pred = cache["pos_pred"]
         neg_preds = cache["neg_preds"]
 
-
-        e_w_grad = (pos_pred - 1) * v_ci + np.sum(neg_preds.reshape(-1, 1) * v_cjs)
+        e_w_grad = (pos_pred - 1) * v_ci + np.sum(neg_preds.reshape(-1, 1) * v_cjs, axis=0)
         v_ci_grad = (pos_pred - 1) * e_w 
         v_cj_grads = np.outer(neg_preds, e_w)
 
